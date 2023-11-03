@@ -27,7 +27,7 @@ val commonDependencies = Seq(
 ) ++ sparkAndKafka
 
 val commonSettings = List(
-  scalacOptions ++= List("-source:future"),
+  scalacOptions ++= List(),
   scalafmtOnCompile := false, // recommended in Scala 3
   testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
 )

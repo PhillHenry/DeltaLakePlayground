@@ -9,7 +9,7 @@ object Dependencies {
     val circe           = "0.14.2"
     val scalacheck      = "1.16.0"
     val organizeImports = "0.6.0"
-    val spark           = "3.3.0"
+    val spark           = "3.5.0"
     val hadoopAws       = "3.3.1"
     val minio           = "8.5.5"
     val deltaLake       = "3.0.0"
