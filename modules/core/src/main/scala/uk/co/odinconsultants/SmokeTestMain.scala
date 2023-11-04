@@ -15,7 +15,7 @@ object SmokeTestMain {
       .getOrCreate()
 
     val data = spark.range(0, 5)
-    data.write.format("delta").save("/tmp/delta-table")
+    data.write.mode("overwrite").format("delta").save("/tmp/delta-table")
   }
 
 }
