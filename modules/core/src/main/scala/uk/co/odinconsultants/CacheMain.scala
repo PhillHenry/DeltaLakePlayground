@@ -21,7 +21,7 @@ object CacheMain {
     assert(df.count() == n * 2)
     df.cache()
     write(spark, dir, n)
-    assert(read(spark, dir).count() == n * 3)
+    assert(read(spark, dir).count() == n * 3) // this blows up even though we have a new DataFrame
     ()
   }
   private def createTempDir(): String = {
