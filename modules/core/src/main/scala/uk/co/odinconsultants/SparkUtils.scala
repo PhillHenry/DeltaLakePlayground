@@ -1,18 +1,38 @@
 package uk.co.odinconsultants
+import org.apache.spark.sql.internal.StaticSQLConf.{CATALOG_IMPLEMENTATION, WAREHOUSE_PATH}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
 import java.lang
+import java.nio.file.Files
 
 object SparkUtils {
-  def getSession(app: String = "bdd_tests"): SparkSession =
+  val tmpDir   : String    = Files.createTempDirectory("SparkForTesting").toString
+
+  def getSession(app: String = "bdd_tests"): SparkSession = {
+    val master   : String    = "local[2]"
+    val sparkConf: SparkConf = {
+      println(s"Using temp directory $tmpDir")
+      System.setProperty("derby.system.home", tmpDir)
+      new SparkConf()
+        .setMaster(master)
+        .setAppName(app)
+        .set("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog")
+        .set(CATALOG_IMPLEMENTATION.key, "hive")
+        .set("spark.sql.catalog.local.type", "hadoop")
+//        .set(DEFAULT_CATALOG.key, "local")
+        .set(WAREHOUSE_PATH.key, tmpDir)
+        .setSparkHome(tmpDir)
+    }
+    SparkContext.getOrCreate(sparkConf)
     SparkSession
       .builder()
       .appName(app)
       .master("local[2]")
       .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
       .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-      .config("spark.sql.catalogImplementation", "hive")
       .getOrCreate()
+  }
 
   def write(spark: SparkSession, dir: String ="/tmp/delta-table", n: Long = 5): Dataset[lang.Long] = {
     val data = spark.range(0, n)
