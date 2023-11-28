@@ -14,6 +14,7 @@ object Dependencies {
     val minio              = "8.5.5"
     val deltaLake          = "3.0.0"
     val documentationUtils = "0.3"
+    val scalaTest          = "3.2.9"
   }
 
   object Libraries {
@@ -31,7 +32,8 @@ object Dependencies {
     // scalafix rules
     val organizeImports = "com.github.liancheng" %% "organize-imports" % V.organizeImports
 
-    val spark      = ("org.apache.spark" %% "spark-sql" % V.spark).cross(CrossVersion.for3Use2_13)
+    val spark      = ("org.apache.spark" %% "spark-sql"  % V.spark).cross(CrossVersion.for3Use2_13)
+    val sparkHive  = ("org.apache.spark" %% "spark-hive" % V.spark).cross(CrossVersion.for3Use2_13)
     val sparkKafka =
       ("org.apache.spark" %% "spark-sql-kafka-0-10" % V.spark).cross(CrossVersion.for3Use2_13)
     val hadoopAws = ("org.apache.hadoop" % "hadoop-aws" % V.hadoopAws)
@@ -44,6 +46,8 @@ object Dependencies {
       "uk.co.odinconsultants.documentation_utils" % "scalatest_utils" % V.documentationUtils
     val documentationUtilsSpark =
       "uk.co.odinconsultants.documentation_utils" % "spark" % V.documentationUtils
+
+    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest
   }
 
 }

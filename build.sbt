@@ -16,6 +16,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 val sparkAndKafka = Seq(
   Libraries.spark,
+  Libraries.sparkHive,
   Libraries.sparkKafka,
   Libraries.hadoopAws,
   Libraries.deltaLake,
@@ -26,6 +27,7 @@ val commonDependencies = Seq(
   Libraries.minio,
   Libraries.documentationUtilsScalaTest,
   Libraries.documentationUtilsSpark,
+  Libraries.scalaTest,
 ) ++ sparkAndKafka
 
 val commonSettings = List(
