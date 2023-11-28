@@ -24,6 +24,8 @@ val sparkAndKafka = Seq(
 val commonDependencies = Seq(
   Libraries.logBack,
   Libraries.minio,
+  Libraries.documentationUtilsScalaTest,
+  Libraries.documentationUtilsSpark,
 ) ++ sparkAndKafka
 
 val commonSettings = List(

@@ -4,15 +4,16 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 object Dependencies {
 
   object V {
-    val fs2Core         = "3.2.7"
-    val fs2Kafka        = "2.4.0"
-    val circe           = "0.14.2"
-    val scalacheck      = "1.16.0"
-    val organizeImports = "0.6.0"
-    val spark           = "3.5.0"
-    val hadoopAws       = "3.3.1"
-    val minio           = "8.5.5"
-    val deltaLake       = "3.0.0"
+    val fs2Core            = "3.2.7"
+    val fs2Kafka           = "2.4.0"
+    val circe              = "0.14.2"
+    val scalacheck         = "1.16.0"
+    val organizeImports    = "0.6.0"
+    val spark              = "3.5.0"
+    val hadoopAws          = "3.3.1"
+    val minio              = "8.5.5"
+    val deltaLake          = "3.0.0"
+    val documentationUtils = "0.3"
   }
 
   object Libraries {
@@ -39,6 +40,10 @@ object Dependencies {
       ("io.minio" % "minio" % V.minio).exclude("com.fasterxml.jackson.core", "jackson-databind")
     val deltaLake = "io.delta" %% "delta-spark" % V.deltaLake
 
+    val documentationUtilsScalaTest =
+      "uk.co.odinconsultants.documentation_utils" % "scalatest_utils" % V.documentationUtils
+    val documentationUtilsSpark =
+      "uk.co.odinconsultants.documentation_utils" % "spark" % V.documentationUtils
   }
 
 }
