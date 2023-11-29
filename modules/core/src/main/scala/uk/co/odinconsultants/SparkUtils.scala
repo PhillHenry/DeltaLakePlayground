@@ -17,7 +17,8 @@ object SparkUtils {
       new SparkConf()
         .setMaster(master)
         .setAppName(app)
-        .set("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog")
+        .set("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .set(CATALOG_IMPLEMENTATION.key, "hive")
         .set("spark.sql.catalog.local.type", "hadoop")
 //        .set(DEFAULT_CATALOG.key, "local")
@@ -29,8 +30,6 @@ object SparkUtils {
       .builder()
       .appName(app)
       .master("local[2]")
-      .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-      .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
       .getOrCreate()
   }
 
