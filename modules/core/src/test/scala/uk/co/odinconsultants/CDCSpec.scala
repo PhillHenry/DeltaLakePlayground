@@ -1,4 +1,5 @@
 package uk.co.odinconsultants
+import io.delta.tables.DeltaTable
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.scalatest.GivenWhenThen
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
@@ -9,6 +10,7 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
     val sinkTable: String = "myDeltaTable"
     val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
     "TODO do something" in new SimpleSparkFixture {
+//      import spark.implicits._
       createTable(tableName, spark).show()
       createTable(sinkTable, spark)
       val deltaDF = spark.read
@@ -21,8 +23,19 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
       spark.createDataFrame(data).writeTo(tableName).append()
       spark.createDataFrame(data).write.format("delta").mode(SaveMode.Append).saveAsTable(tableName)
       deltaDF.show()
-//      deltaDF.writeTo(sinkTable).append()
-      // TODO
+//      deltaDF.drop('_commit_version, '_change_type, '_commit_timestamp).writeTo(sinkTable).append()
+      val targetDF = DeltaTable.forName(sinkTable)
+      targetDF
+        .merge(deltaDF, s"$tableName.id = $sinkTable.id")
+        .whenMatched()
+        .updateAll()
+        .whenNotMatched()
+        .insertAll()
+        .whenNotMatchedBySource()
+        .delete()
+        .execute()
+      targetDF.toDF.show()
+//       TODO
     }
   }
 
