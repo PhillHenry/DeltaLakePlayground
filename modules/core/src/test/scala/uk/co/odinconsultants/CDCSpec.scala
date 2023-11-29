@@ -3,6 +3,7 @@ import io.delta.tables.DeltaTable
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.scalatest.GivenWhenThen
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
+import org.apache.spark.sql.functions._
 
 class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
@@ -25,9 +26,10 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
       deltaDF.show()
 //      deltaDF.drop('_commit_version, '_change_type, '_commit_timestamp).writeTo(sinkTable).append()
       val targetDF = DeltaTable.forName(sinkTable)
+      val deltaDeDuped: DataFrame = deltaDF.select(col("id"), col("label"), col("partitionKey"))
       targetDF
-        .merge(deltaDF, s"$tableName.id = $sinkTable.id")
-        .whenMatched()
+        .merge(deltaDeDuped.distinct(), s"$tableName.id = $sinkTable.id")
+        .whenMatched(s"$tableName.id = $sinkTable.id")
         .updateAll()
         .whenNotMatched()
         .insertAll()
@@ -35,7 +37,8 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
         .delete()
         .execute()
       targetDF.toDF.show()
-//       TODO
+      assert(deltaDF.count() == data.size * 2)
+      assert(targetDF.toDF.count() == data.size)
     }
   }
 
