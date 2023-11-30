@@ -67,18 +67,6 @@ lazy val it = (project in file("modules/it"))
     ) ++ commonDependencies
   )
 
-lazy val runTestProj = (project in file("mdocs"))
-  .settings(
-    // Projects' target dirs can't overlap
-    target                       := target.value.toPath.resolveSibling("target-runtest").toFile,
-    commonSettings,
-    // If separate main file needed, e.g. for specifying spark master in code
-    Compile / run / mainClass    := Some(
-      "uk.co.odinconsultants.documentation_utils.SplitScenariosMain"
-    ),
-    libraryDependencies ++= commonDependencies,
-  )
-
 val myRun = taskKey[Unit]("...")
 
 myRun := Def.taskDyn {
