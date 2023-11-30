@@ -1,51 +1,96 @@
 package uk.co.odinconsultants
 import io.delta.tables.DeltaTable
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.GivenWhenThen
+import org.scalatest.matchers.should.Matchers._
+import uk.co.odinconsultants.documentation_utils.SQLUtils.createDatumTable
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
-import org.apache.spark.sql.functions._
+
+import java.io.ByteArrayOutputStream
 
 class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   "A dataset that is CDC enabled" should {
     val sinkTable: String = "myDeltaTable"
     val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
-    "TODO do something" in new SimpleSparkFixture {
-//      import spark.implicits._
-      createTable(tableName, spark).show()
-      createTable(sinkTable, spark)
+    "still require de-duping" in new SimpleSparkFixture {
+      givenCDFTable(tableName, spark)
+
+      When(s"we write ${data.length} rows to $tableName")
+      spark.createDataFrame(data).writeTo(tableName).append()
+      And(s"again write another ${data.length} rows to $tableName")
+      spark.createDataFrame(data).writeTo(tableName).append()
+
+      val history                  = describeHistory(tableName, spark)
+      val expectedHistoryRows: Int = 3
+      Then(
+        s"the history table has $expectedHistoryRows rows, 1 for creation and ${expectedHistoryRows - 1} for insertion"
+      )
+      history.count() shouldEqual expectedHistoryRows
+      And(s"the history of the source table looks like:\n${captureOutputOf {
+          history.show(truncate = false)
+        }}")
+    }
+
+    "write its deltas to another table" in new SimpleSparkFixture {
+      val sinkSQL = createTableSQL(sinkTable)
+      Given(s"a sink table created with SQL: ${formatSQL(sinkSQL)}")
+      spark.sqlContext.sql(sinkSQL)
+
       val deltaDF = spark.read
         .format("delta")
         .option("readChangeFeed", "true")
         .option("startingVersion", 0)
         .option("mergeSchema", "true")
         .table(tableName)
-      spark.createDataFrame(data).writeTo(tableName).append()
-      spark.createDataFrame(data).write.format("delta").mode(SaveMode.Append).saveAsTable(tableName)
-      deltaDF.show()
-      val targetDF = DeltaTable.forName(sinkTable)
-      val deltaDeDuped: DataFrame = deltaDF.select(col("id"), col("label"), col("partitionKey"))
+
+      val targetDF                = DeltaTable.forName(sinkTable)
+//      val columns: Array[Column]  = classOf[Datum].getDeclaredFields.map { x =>
+//        col(x.getName)
+//      }
+//      val deltaDeDuped: DataFrame =
+//        deltaDF.select(columns.toIndexedSeq: _*)
+      val pkCol = "id"
+      val condition               = s"$tableName.$pkCol = $sinkTable.$pkCol"
+      When(s"we merge on the condition ${Console.CYAN}$condition${Console.RESET}")
       targetDF
-        .merge(deltaDeDuped.distinct(), s"$tableName.id = $sinkTable.id")
-        .whenMatched(s"$tableName.id = $sinkTable.id")
+        .merge(deltaDF, condition)
+        .whenMatched(condition)
         .updateAll()
         .whenNotMatched()
         .insertAll()
         .whenNotMatchedBySource()
         .delete()
         .execute()
-      targetDF.toDF.show()
+      val numTargetRows: Long     = targetDF.toDF.count()
+      Then(s"the rows in the sink file are not unique, in fact there are $numTargetRows rows")
       assert(deltaDF.count() == data.size * 2)
-      assert(targetDF.toDF.count() == data.size)
+      assert(numTargetRows == data.size * 2)
+      And(s"the sink table looks like this:\n${captureOutputOf{targetDF.toDF.orderBy(pkCol).show(truncate = false)}}")
     }
   }
 
-  private def createTable(tableName: String, spark: SparkSession): DataFrame = {
-    val createSql: String = s"""CREATE TABLE $tableName (id INT, label STRING, partitionKey LONG)
-                                      |USING DELTA
-                                      |TBLPROPERTIES (delta.enableChangeDataFeed = true)
-                                      |""".stripMargin
-    spark.sqlContext.sql(createSql)
-    spark.sqlContext.sql(s"DESCRIBE HISTORY $tableName")
+  def captureOutputOf[T](thunk: => T): String = {
+    val out = new ByteArrayOutputStream()
+    Console.withOut(out) {
+      thunk
+    }
+    new String(out.toByteArray)
   }
+
+  def givenCDFTable(tableName: String, spark: SparkSession): DataFrame = {
+    val createCDF: String =
+      s"${createTableSQL(tableName)} TBLPROPERTIES (delta.enableChangeDataFeed = true)"
+    Given(s"a table created with the SQL: ${formatSQL(createCDF)}")
+    spark.sqlContext.sql(createCDF)
+  }
+
+  def describeHistory(
+      tableName: String,
+      spark:     SparkSession,
+  ): DataFrame =
+    spark.sqlContext.sql(s"DESCRIBE HISTORY $tableName")
+
+  def createTableSQL(tableName: String): String = s"""${createDatumTable(tableName, classOf[Datum])}
+                                                     |USING DELTA""".stripMargin
 }

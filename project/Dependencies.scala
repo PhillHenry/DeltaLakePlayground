@@ -13,7 +13,7 @@ object Dependencies {
     val hadoopAws          = "3.3.1"
     val minio              = "8.5.5"
     val deltaLake          = "3.0.0"
-    val documentationUtils = "0.3"
+    val documentationUtils = "0.4"
     val scalaTest          = "3.2.9"
   }
 
@@ -47,7 +47,9 @@ object Dependencies {
     val documentationUtilsSpark =
       "uk.co.odinconsultants.documentation_utils" % "spark" % V.documentationUtils
 
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest
+    val scalaTest       = "org.scalatest"       %% "scalatest"                % V.scalaTest
+    val flexMark        = "com.vladsch.flexmark" % "flexmark"                 % "0.36.8" % Test
+    val flexMarkPegMark = "com.vladsch.flexmark" % "flexmark-profile-pegdown" % "0.36.8" % Test
   }
 
 }

@@ -46,7 +46,9 @@ lazy val lib = (project in file("modules/lib"))
   .settings((commonSettings ++ List(libraryDependencies := commonDependencies)): _*)
 
 lazy val core = (project in file("modules/core"))
-  .settings(commonSettings ++ List(libraryDependencies := commonDependencies): _*)
+  .settings(commonSettings ++ List(libraryDependencies := commonDependencies, testOptions := Seq(
+        Tests.Argument(TestFrameworks.ScalaTest, "-fW", "mdocs/scenarios.txt")
+      )): _*)
   .dependsOn(lib)
 
 // integration tests
