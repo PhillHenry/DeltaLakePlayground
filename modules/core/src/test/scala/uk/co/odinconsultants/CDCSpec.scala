@@ -17,14 +17,12 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
       val deltaDF = spark.read
         .format("delta")
         .option("readChangeFeed", "true")
-        .option("startingVersion", 1)
+        .option("startingVersion", 0)
         .option("mergeSchema", "true")
-//        .option("endingVersion", 10)
         .table(tableName)
       spark.createDataFrame(data).writeTo(tableName).append()
       spark.createDataFrame(data).write.format("delta").mode(SaveMode.Append).saveAsTable(tableName)
       deltaDF.show()
-//      deltaDF.drop('_commit_version, '_change_type, '_commit_timestamp).writeTo(sinkTable).append()
       val targetDF = DeltaTable.forName(sinkTable)
       val deltaDeDuped: DataFrame = deltaDF.select(col("id"), col("label"), col("partitionKey"))
       targetDF
@@ -45,11 +43,9 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
   private def createTable(tableName: String, spark: SparkSession): DataFrame = {
     val createSql: String = s"""CREATE TABLE $tableName (id INT, label STRING, partitionKey LONG)
                                       |USING DELTA
+                                      |TBLPROPERTIES (delta.enableChangeDataFeed = true)
                                       |""".stripMargin
-    val alterTableSql: String =
-      s"ALTER TABLE $tableName SET TBLPROPERTIES (delta.enableChangeDataFeed = true)"
     spark.sqlContext.sql(createSql)
-    spark.sqlContext.sql(alterTableSql)
     spark.sqlContext.sql(s"DESCRIBE HISTORY $tableName")
   }
 }
