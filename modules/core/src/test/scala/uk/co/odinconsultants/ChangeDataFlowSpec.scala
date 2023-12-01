@@ -8,12 +8,14 @@ import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNam
 
 import java.io.ByteArrayOutputStream
 
-class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
+class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
+
+  info("See https://www.databricks.com/blog/2021/06/09/how-to-simplify-cdc-with-delta-lakes-change-data-feed.html")
 
   "A dataset that is CDC enabled" should {
     val sinkTable: String = "myDeltaTable"
     val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
-    "still require de-duping" in new SimpleSparkFixture {
+    "is created and populated" in new SimpleSparkFixture {
       givenCDFTable(tableName, spark)
 
       When(s"we write ${data.length} rows to $tableName")
@@ -64,6 +66,7 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
       And(s"the sink table looks like this:\n${captureOutputOf {
           targetDF.toDF.orderBy(pkCol).show(truncate = false)
         }}")
+      info("See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with")
     }
   }
 
