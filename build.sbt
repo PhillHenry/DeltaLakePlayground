@@ -69,11 +69,17 @@ lazy val it = (project in file("modules/it"))
 
 val myRun = taskKey[Unit]("...")
 
+val header = """## DeltaLake Playground
+               |
+               |                                    These are BDD (Behaviour Driven Design) tests that both test
+               |                                    the code and generate human readable documentation.""".stripMargin
+val args = " uk.co.odinconsultants.documentation_utils.SplitScenariosMain \"" + header + "\" mdocs/scenarios.txt"
+
 myRun := Def.taskDyn {
   val appName = name.value
   Def.task {
     (runMain in core in Compile)
-      .toTask(s" uk.co.odinconsultants.documentation_utils.SplitScenariosMain ^(.*)Spec: mdocs/scenarios.txt")
+      .toTask(args)
       .value
   }
 }.value

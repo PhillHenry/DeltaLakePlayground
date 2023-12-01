@@ -3,7 +3,7 @@ import io.delta.tables.DeltaTable
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
-import uk.co.odinconsultants.documentation_utils.SQLUtils.createDatumTable
+import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
 
 import java.io.ByteArrayOutputStream
@@ -33,7 +33,7 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
     }
 
     "write its deltas to another table" in new SimpleSparkFixture {
-      val sinkSQL = createTableSQL(sinkTable)
+      val sinkSQL = createTableSQLUsingDelta(sinkTable)
       Given(s"a sink table created with SQL: ${formatSQL(sinkSQL)}")
       spark.sqlContext.sql(sinkSQL)
 
@@ -44,14 +44,9 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
         .option("mergeSchema", "true")
         .table(tableName)
 
-      val targetDF                = DeltaTable.forName(sinkTable)
-//      val columns: Array[Column]  = classOf[Datum].getDeclaredFields.map { x =>
-//        col(x.getName)
-//      }
-//      val deltaDeDuped: DataFrame =
-//        deltaDF.select(columns.toIndexedSeq: _*)
-      val pkCol = "id"
-      val condition               = s"$tableName.$pkCol = $sinkTable.$pkCol"
+      val targetDF            = DeltaTable.forName(sinkTable)
+      val pkCol               = "id"
+      val condition           = s"$tableName.$pkCol = $sinkTable.$pkCol"
       When(s"we merge on the condition ${Console.CYAN}$condition${Console.RESET}")
       targetDF
         .merge(deltaDF, condition)
@@ -62,11 +57,13 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
         .whenNotMatchedBySource()
         .delete()
         .execute()
-      val numTargetRows: Long     = targetDF.toDF.count()
+      val numTargetRows: Long = targetDF.toDF.count()
       Then(s"the rows in the sink file are not unique, in fact there are $numTargetRows rows")
       assert(deltaDF.count() == data.size * 2)
       assert(numTargetRows == data.size * 2)
-      And(s"the sink table looks like this:\n${captureOutputOf{targetDF.toDF.orderBy(pkCol).show(truncate = false)}}")
+      And(s"the sink table looks like this:\n${captureOutputOf {
+          targetDF.toDF.orderBy(pkCol).show(truncate = false)
+        }}")
     }
   }
 
@@ -80,7 +77,7 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   def givenCDFTable(tableName: String, spark: SparkSession): DataFrame = {
     val createCDF: String =
-      s"${createTableSQL(tableName)} TBLPROPERTIES (delta.enableChangeDataFeed = true)"
+      s"${createTableSQLUsingDelta(tableName)} TBLPROPERTIES (delta.enableChangeDataFeed = true)"
     Given(s"a table created with the SQL: ${formatSQL(createCDF)}")
     spark.sqlContext.sql(createCDF)
   }
@@ -91,6 +88,7 @@ class CDCSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
   ): DataFrame =
     spark.sqlContext.sql(s"DESCRIBE HISTORY $tableName")
 
-  def createTableSQL(tableName: String): String = s"""${createDatumTable(tableName, classOf[Datum])}
+  def createTableSQLUsingDelta(tableName: String): String =
+    s"""${createTableSQL(tableName, classOf[Datum])}
                                                      |USING DELTA""".stripMargin
 }
