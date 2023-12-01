@@ -10,12 +10,14 @@ import java.io.ByteArrayOutputStream
 
 class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
-  info("See https://www.databricks.com/blog/2021/06/09/how-to-simplify-cdc-with-delta-lakes-change-data-feed.html")
+  info(
+    "See https://www.databricks.com/blog/2021/06/09/how-to-simplify-cdc-with-delta-lakes-change-data-feed.html"
+  )
 
   "A dataset that is CDC enabled" should {
     val sinkTable: String = "myDeltaTable"
     val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
-    "is created and populated" in new SimpleSparkFixture {
+    "be created and populated" in new SimpleSparkFixture {
       givenCDFTable(tableName, spark)
 
       When(s"we write ${data.length} rows to $tableName")
@@ -39,36 +41,45 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
       Given(s"a sink table created with SQL: ${formatSQL(sinkSQL)}")
       spark.sqlContext.sql(sinkSQL)
 
-      val deltaDF = spark.read
+      val sourceDF = spark.read
         .format("delta")
         .option("readChangeFeed", "true")
         .option("startingVersion", 0)
         .option("mergeSchema", "true")
         .table(tableName)
 
-      val targetDF            = DeltaTable.forName(sinkTable)
+      val sinkDF              = DeltaTable.forName(sinkTable)
       val pkCol               = "id"
       val condition           = s"$tableName.$pkCol = $sinkTable.$pkCol"
       When(s"we merge on the condition ${Console.CYAN}$condition${Console.RESET}")
-      targetDF
-        .merge(deltaDF, condition)
-        .whenMatched(condition)
-        .updateAll()
-        .whenNotMatched()
-        .insertAll()
-        .whenNotMatchedBySource()
-        .delete()
-        .execute()
-      val numTargetRows: Long = targetDF.toDF.count()
+      doMerge(sourceDF, sinkDF, condition)
+      val numTargetRows: Long = sinkDF.toDF.count()
       Then(s"the rows in the sink file are not unique, in fact there are $numTargetRows rows")
-      assert(deltaDF.count() == data.size * 2)
+      assert(sourceDF.count() == data.size * 2)
       assert(numTargetRows == data.size * 2)
       And(s"the sink table looks like this:\n${captureOutputOf {
-          targetDF.toDF.orderBy(pkCol).show(truncate = false)
+          sinkDF.toDF.orderBy(pkCol).show(truncate = false)
         }}")
-      info("See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with")
+      info(
+        "See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with"
+      )
     }
   }
+
+  private def doMerge(
+      sourceDF:  DataFrame,
+      sinkDF:    DeltaTable,
+      condition: String,
+  ): Unit =
+    sinkDF
+      .merge(sourceDF, condition)
+      .whenMatched(condition)
+      .updateAll()
+      .whenNotMatched()
+      .insertAll()
+      .whenNotMatchedBySource()
+      .delete()
+      .execute()
 
   def captureOutputOf[T](thunk: => T): String = {
     val out = new ByteArrayOutputStream()
