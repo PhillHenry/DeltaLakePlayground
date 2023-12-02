@@ -1,6 +1,6 @@
 package uk.co.odinconsultants
 import io.delta.tables.DeltaTable
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
 import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
@@ -17,13 +17,15 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
   "A dataset that is CDC enabled" should {
     val sinkTable: String = "myDeltaTable"
     val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
+    val pkCol: String     = "id"
+    val condition: String = s"$tableName.$pkCol = $sinkTable.$pkCol"
     "be created and populated" in new SimpleSparkFixture {
       givenCDFTable(tableName, spark)
 
       When(s"we write ${data.length} rows to $tableName")
-      spark.createDataFrame(data).writeTo(tableName).append()
+      appendData(tableName)
       And(s"again write another ${data.length} rows to $tableName")
-      spark.createDataFrame(data).writeTo(tableName).append()
+      appendData(tableName)
 
       val history                  = describeHistory(tableName, spark)
       val expectedHistoryRows: Int = 3
@@ -36,7 +38,7 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         }}")
     }
 
-    "write its deltas to another table" in new SimpleSparkFixture {
+    "write its deltas to another table in a batch" in new SimpleSparkFixture {
       val sinkSQL = createTableSQLUsingDelta(sinkTable)
       Given(s"a sink table created with SQL: ${formatSQL(sinkSQL)}")
       spark.sqlContext.sql(sinkSQL)
@@ -49,10 +51,8 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         .table(tableName)
 
       val sinkDF              = DeltaTable.forName(sinkTable)
-      val pkCol               = "id"
-      val condition           = s"$tableName.$pkCol = $sinkTable.$pkCol"
       When(s"we merge on the condition ${Console.CYAN}$condition${Console.RESET}")
-      doMerge(sourceDF, sinkDF, condition)
+      ChangeDataFlowSpec.doMerge(sourceDF, sinkDF, condition)
       val numTargetRows: Long = sinkDF.toDF.count()
       Then(s"the rows in the sink file are not unique, in fact there are $numTargetRows rows")
       assert(sourceDF.count() == data.size * 2)
@@ -64,22 +64,18 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         "See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with"
       )
     }
+    "write its deltas to another table as a stream" ignore new SimpleSparkFixture {
+      val sinkDF: Dataset[Row] = spark.readStream
+        .format("delta")
+        .option("withEventTimeOrder", "true")
+        .table(tableName)
+        .withWatermark("timestamp", "2 seconds")
+      appendData(tableName)
+      Then(captureOutputOf(sinkDF.show()))
+      Thread.sleep(3000)
+      Then(captureOutputOf(sinkDF.show()))
+    }
   }
-
-  private def doMerge(
-      sourceDF:  DataFrame,
-      sinkDF:    DeltaTable,
-      condition: String,
-  ): Unit =
-    sinkDF
-      .merge(sourceDF, condition)
-      .whenMatched(condition)
-      .updateAll()
-      .whenNotMatched()
-      .insertAll()
-      .whenNotMatchedBySource()
-      .delete()
-      .execute()
 
   def captureOutputOf[T](thunk: => T): String = {
     val out = new ByteArrayOutputStream()
@@ -105,4 +101,27 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
   def createTableSQLUsingDelta(tableName: String): String =
     s"""${createTableSQL(tableName, classOf[Datum])}
                                                      |USING DELTA""".stripMargin
+}
+
+object ChangeDataFlowSpec {
+  def upsertToDelta(sinkDF:    DeltaTable,
+                    condition: String)(df: DataFrame, batchId: Long): Unit = {
+    println(s"batchId = $batchId")
+    doMerge(df, sinkDF, condition)
+  }
+
+  private def doMerge(
+      sourceDF:  DataFrame,
+      sinkDF:    DeltaTable,
+      condition: String,
+  ): Unit =
+    sinkDF
+      .merge(sourceDF, condition)
+      .whenMatched(condition)
+      .updateAll()
+      .whenNotMatched()
+      .insertAll()
+      .whenNotMatchedBySource()
+      .delete()
+      .execute()
 }

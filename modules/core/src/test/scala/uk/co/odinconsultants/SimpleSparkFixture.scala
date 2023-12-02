@@ -9,4 +9,6 @@ trait SimpleSparkFixture extends SimpleFixture {
 
   def dataDir(tableName: String): String = s"$tmpDir/$tableName/data"
 
+  def appendData(tableName: String): Unit = spark.createDataFrame(data).writeTo(tableName).append()
+
 }
