@@ -1,6 +1,6 @@
 package uk.co.odinconsultants
 import org.apache.spark.sql.DataFrame
-import uk.co.odinconsultants.SparkUtils.{getSession, read, write}
+import uk.co.odinconsultants.SparkUtils.{sparkSession, read, write}
 
 import java.io.File
 
@@ -11,7 +11,7 @@ object CacheMain {
    * any updates, even if you create a <b>new reference</b> to the directory.
    */
   def main(args: Array[String]): Unit = {
-    val spark = getSession("ph_test")
+    val spark = sparkSession
     val dir = createTempDir()
     val n: Long = 5
     write(spark, dir, n)

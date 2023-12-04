@@ -16,7 +16,6 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
 
   "A dataset that is CDC enabled" should {
     val sinkTable: String = "myDeltaTable"
-    val tableName: String = Datum.getClass.getSimpleName.replace("$", "")
     val pkCol: String     = "id"
     val condition: String = s"$tableName.$pkCol = $sinkTable.$pkCol"
     "be created and populated" in new SimpleSparkFixture {
@@ -50,7 +49,7 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         .option("mergeSchema", "true")
         .table(tableName)
 
-      val sinkDF              = DeltaTable.forName(sinkTable)
+      val sinkDF              = DeltaTable.forName(spark, sinkTable)
       When(s"we merge on the condition ${Console.CYAN}$condition${Console.RESET}")
       ChangeDataFlowSpec.doMerge(sourceDF, sinkDF, condition)
       val numTargetRows: Long = sinkDF.toDF.count()

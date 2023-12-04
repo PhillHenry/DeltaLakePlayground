@@ -7,7 +7,9 @@ import java.lang
 import java.nio.file.Files
 
 object SparkUtils {
-  val tmpDir   : String    = Files.createTempDirectory("SparkForTesting").toString
+  val tmpDir: String = Files.createTempDirectory("SparkForTesting").toString
+
+  val sparkSession: SparkSession = getSession("bdd_tests")
 
   def getSession(app: String = "bdd_tests"): SparkSession = {
     val master   : String    = "local[2]"
@@ -33,13 +35,17 @@ object SparkUtils {
       .getOrCreate()
   }
 
-  def write(spark: SparkSession, dir: String ="/tmp/delta-table", n: Long = 5): Dataset[lang.Long] = {
+  def write(
+      spark: SparkSession,
+      dir:   String = "/tmp/delta-table",
+      n:     Long = 5,
+  ): Dataset[lang.Long] = {
     val data = spark.range(0, n)
     data.write.mode("overwrite").format("delta").save(dir)
     data
   }
 
-  def read(spark: SparkSession, dir: String ="/tmp/delta-table"): DataFrame = {
+  def read(spark: SparkSession, dir: String = "/tmp/delta-table"): DataFrame = {
     val data = spark.read.parquet(dir)
     data
   }

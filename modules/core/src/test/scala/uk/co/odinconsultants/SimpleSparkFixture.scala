@@ -5,7 +5,7 @@ import uk.co.odinconsultants.documentation_utils.SimpleFixture
 
 trait SimpleSparkFixture extends SimpleFixture {
 
-  val spark: SparkSession = SparkUtils.getSession()
+  val spark: SparkSession = SparkUtils.sparkSession
 
   def dataDir(tableName: String): String = s"$tmpDir/$tableName/data"
 

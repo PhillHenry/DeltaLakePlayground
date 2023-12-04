@@ -13,7 +13,7 @@ object Dependencies {
     val hadoopAws          = "3.3.1"
     val minio              = "8.5.5"
     val deltaLake          = "3.0.0"
-    val documentationUtils = "0.7"
+    val documentationUtils = "0.8"
     val scalaTest          = "3.2.9"
   }
 
