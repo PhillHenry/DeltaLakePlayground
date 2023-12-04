@@ -1,4 +1,4 @@
-baseURL = 'https://example.org/'
+baseURL = 'https://deltalake.thebigdata.space//'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = 'DeltaLake BDDs'
 theme        = "holy"
