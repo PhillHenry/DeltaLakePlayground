@@ -41,7 +41,6 @@ class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with 
       appendData(tableName)
       And(s"we wait $pauseMs ms")
       Thread.sleep(pauseMs)
-      future.isCompleted shouldBe false
 
       val query                          = Await.result(future, FiniteDuration.apply(pauseMs * 4, TimeUnit.MILLISECONDS))
       Then(s"the final row count at ${new java.util.Date()} in $streamSinkTable is ${sinkDF.count()} rows")

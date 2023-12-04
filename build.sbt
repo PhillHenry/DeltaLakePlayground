@@ -67,15 +67,17 @@ lazy val it = (project in file("modules/it"))
     ) ++ commonDependencies
   )
 
-val myRun = taskKey[Unit]("...")
+val bddDocs = taskKey[Unit]("Turn the BDD output into HTML")
 
 val header = """## DeltaLake Playground
                |
-               |                                    These are BDD (Behaviour Driven Design) tests that both test
-               |                                    the code and generate human readable documentation.""".stripMargin
+               |These are BDD (Behaviour Driven Design) tests that both test
+               |the code and generate human readable documentation.
+               |
+               |""".stripMargin
 val args = " uk.co.odinconsultants.documentation_utils.SplitScenariosMain \"" + header + "\" mdocs/scenarios.txt"
 
-myRun := Def.taskDyn {
+bddDocs := Def.taskDyn {
   val appName = name.value
   Def.task {
     (runMain in core in Compile)
