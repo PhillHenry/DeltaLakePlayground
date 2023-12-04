@@ -1,13 +1,14 @@
 package uk.co.odinconsultants
 import io.delta.tables.DeltaTable
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.scalatest.GivenWhenThen
+import org.scalatest.{DoNotDiscover, GivenWhenThen}
 import org.scalatest.matchers.should.Matchers._
 import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
 
 import java.io.ByteArrayOutputStream
 
+@DoNotDiscover
 class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   info(

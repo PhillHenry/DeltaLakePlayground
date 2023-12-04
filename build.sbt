@@ -14,6 +14,8 @@ Compile / run / fork           := true
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+Test / parallelExecution := false
+
 val sparkAndKafka = Seq(
   Libraries.spark,
   Libraries.sparkHive,
@@ -76,7 +78,8 @@ val header = s"""## DeltaLake Playground
                |The code for these tests can be found in [GitHub](https://github.com/PhillHenry/DeltaLakePlayground)
                |
                |""".stripMargin
-val args = " uk.co.odinconsultants.documentation_utils.SplitScenariosMain \"" + header + "\" mdocs/scenarios.txt"
+val args   =
+  " uk.co.odinconsultants.documentation_utils.SplitScenariosMain \"" + header + "\" mdocs/scenarios.txt"
 
 bddDocs := Def.taskDyn {
   val appName = name.value
