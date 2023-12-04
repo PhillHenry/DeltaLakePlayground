@@ -15,10 +15,10 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   info(
-    "See https://www.databricks.com/blog/2021/06/09/how-to-simplify-cdc-with-delta-lakes-change-data-feed.html"
+    "https://docs.databricks.com/en/structured-streaming/delta-lake.html"
   )
 
-  "A dataset that is CDC enabled" should {
+  "A dataset that is updated" should {
 
     "write its deltas to another table as a stream" in new SimpleSparkFixture {
       givenCDFTable(tableName, spark)

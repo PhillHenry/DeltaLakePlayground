@@ -69,10 +69,11 @@ lazy val it = (project in file("modules/it"))
 
 val bddDocs = taskKey[Unit]("Turn the BDD output into HTML")
 
-val header = """## DeltaLake Playground
+val header = s"""## DeltaLake Playground
                |
                |These are BDD (Behaviour Driven Design) tests that both test
                |the code and generate human readable documentation.
+               |The code for these tests can be found in [GitHub](https://github.com/PhillHenry/DeltaLakePlayground)
                |
                |""".stripMargin
 val args = " uk.co.odinconsultants.documentation_utils.SplitScenariosMain \"" + header + "\" mdocs/scenarios.txt"

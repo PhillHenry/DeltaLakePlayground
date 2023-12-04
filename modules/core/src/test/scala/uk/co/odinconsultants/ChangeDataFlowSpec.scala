@@ -63,17 +63,6 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         "See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with"
       )
     }
-    "write its deltas to another table as a stream" ignore new SimpleSparkFixture {
-      val sinkDF: Dataset[Row] = spark.readStream
-        .format("delta")
-        .option("withEventTimeOrder", "true")
-        .table(tableName)
-        .withWatermark("timestamp", "2 seconds")
-      appendData(tableName)
-      Then(captureOutputOf(sinkDF.show()))
-      Thread.sleep(3000)
-      Then(captureOutputOf(sinkDF.show()))
-    }
   }
 
   def captureOutputOf[T](thunk: => T): String = {
