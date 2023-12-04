@@ -49,6 +49,71 @@ b.BWHI {background-color: #aaaaaa}
 <pre>Run starting. Expected test count is: 0
 ChangeDataFlowSpec:
 + See https://www.databricks.com/blog/2021/06/09/how-to-simplify-cdc-with-delta-lakes-change-data-feed.html 
-A dataset that is CDC enabled</pre>
+A dataset that is CDC enabled
+- should be created and populated
+  + Given a table created with the SQL: 
+<b class=YEL>CREATE TABLE ChangeDataFlowSpec (
+  id int,
+  label String,
+  partitionKey long,
+  date Date,
+  timestamp Timestamp
+) USING DELTA TBLPROPERTIES (delta.enableChangeDataFeed = true)</b> 
+  + When we write 20 rows to ChangeDataFlowSpec 
+  + And again write another 20 rows to ChangeDataFlowSpec 
+  + Then the history table has 3 rows, 1 for creation and 2 for insertion 
+  + And the history of the source table looks like:
++-------+-----------------------+------+--------+------------+----------------------------------------------------------------------------------------------------------------+----+--------+---------+-----------+--------------+-------------+------------------------------------------------------------+------------+-----------------------------------+
+|version|timestamp              |userId|userName|operation   |operationParameters                                                                                             |job |notebook|clusterId|readVersion|isolationLevel|isBlindAppend|operationMetrics                                            |userMetadata|engineInfo                         |
++-------+-----------------------+------+--------+------------+----------------------------------------------------------------------------------------------------------------+----+--------+---------+-----------+--------------+-------------+------------------------------------------------------------+------------+-----------------------------------+
+|2      |2023-12-04 16:06:52.87 |NULL  |NULL    |WRITE       |{mode -&gt; Append, partitionBy -&gt; []}                                                                             |NULL|NULL    |NULL     |1          |Serializable  |true         |{numFiles -&gt; 2, numOutputRows -&gt; 20, numOutputBytes -&gt; 3372}|NULL        |Apache-Spark/3.5.0 Delta-Lake/3.0.0|
+|1      |2023-12-04 16:06:51.39 |NULL  |NULL    |WRITE       |{mode -&gt; Append, partitionBy -&gt; []}                                                                             |NULL|NULL    |NULL     |0          |Serializable  |true         |{numFiles -&gt; 2, numOutputRows -&gt; 20, numOutputBytes -&gt; 3372}|NULL        |Apache-Spark/3.5.0 Delta-Lake/3.0.0|
+|0      |2023-12-04 16:06:43.094|NULL  |NULL    |CREATE TABLE|{isManaged -&gt; true, description -&gt; NULL, partitionBy -&gt; [], properties -&gt; {"delta.enableChangeDataFeed":"true"}}|NULL|NULL    |NULL     |NULL       |Serializable  |true         |{}                                                          |NULL        |Apache-Spark/3.5.0 Delta-Lake/3.0.0|
++-------+-----------------------+------+--------+------------+----------------------------------------------------------------------------------------------------------------+----+--------+---------+-----------+--------------+-------------+------------------------------------------------------------+------------+-----------------------------------+
+
+ 
++ <b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b> 
+- should write its deltas to another table in a batch
+  + Given a sink table created with SQL: 
+<b class=YEL>CREATE TABLE myDeltaTable (
+  id int,
+  label String,
+  partitionKey long,
+  date Date,
+  timestamp Timestamp
+) USING DELTA</b> 
+  + When we merge on the condition <b class=CYN>ChangeDataFlowSpec.id = myDeltaTable.id</b> 
+  + Then the rows in the sink file are not unique, in fact there are 40 rows 
+  + And the sink table looks like this:
++---+-------+------------+----------+-----------------------+
+|id |label  |partitionKey|date      |timestamp              |
++---+-------+------------+----------+-----------------------+
+|0  |label_0|0           |2023-12-04|2023-12-04 16:06:34.216|
+|0  |label_0|0           |2023-12-04|2023-12-04 16:06:34.216|
+|1  |label_1|1           |2023-12-03|2023-12-04 16:06:34.416|
+|1  |label_1|1           |2023-12-03|2023-12-04 16:06:34.416|
+|2  |label_2|2           |2023-12-02|2023-12-04 16:06:34.616|
+|2  |label_2|2           |2023-12-02|2023-12-04 16:06:34.616|
+|3  |label_3|3           |2023-12-01|2023-12-04 16:06:34.816|
+|3  |label_3|3           |2023-12-01|2023-12-04 16:06:34.816|
+|4  |label_4|4           |2023-11-30|2023-12-04 16:06:35.016|
+|4  |label_4|4           |2023-11-30|2023-12-04 16:06:35.016|
+|5  |label_5|0           |2023-11-29|2023-12-04 16:06:35.216|
+|5  |label_5|0           |2023-11-29|2023-12-04 16:06:35.216|
+|6  |label_6|1           |2023-11-28|2023-12-04 16:06:35.416|
+|6  |label_6|1           |2023-11-28|2023-12-04 16:06:35.416|
+|7  |label_7|2           |2023-11-27|2023-12-04 16:06:35.616|
+|7  |label_7|2           |2023-11-27|2023-12-04 16:06:35.616|
+|8  |label_8|3           |2023-11-26|2023-12-04 16:06:35.816|
+|8  |label_8|3           |2023-11-26|2023-12-04 16:06:35.816|
+|9  |label_9|4           |2023-11-25|2023-12-04 16:06:36.016|
+|9  |label_9|4           |2023-11-25|2023-12-04 16:06:36.016|
++---+-------+------------+----------+-----------------------+
+only showing top 20 rows
+
+ 
+  + See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with 
++ <b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b> 
++ <b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b> </pre>
 </body>
 </html>
