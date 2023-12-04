@@ -14,7 +14,7 @@ object Dependencies {
     val minio              = "8.5.5"
     val deltaLake          = "3.0.0"
     val documentationUtils = "0.8"
-    val scalaTest          = "3.2.9"
+    val scalaTest          = "3.2.17"
   }
 
   object Libraries {

@@ -19,7 +19,6 @@ class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with 
   )
 
   "A dataset that is updated" should {
-
     "write its deltas to another table as a stream" in new SimpleSparkFixture {
       givenCDFTable(tableName, spark)
       override def num_rows: Int         = 100
