@@ -14,8 +14,6 @@ Compile / run / fork           := true
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-Test / parallelExecution := false
-
 val sparkAndKafka = Seq(
   Libraries.spark,
   Libraries.sparkHive,
@@ -49,7 +47,7 @@ lazy val lib = (project in file("modules/lib"))
   .settings((commonSettings ++ List(libraryDependencies := commonDependencies)): _*)
 
 lazy val core = (project in file("modules/core"))
-  .settings(testForkedParallel := false, parallelExecution := false,
+  .settings(parallelExecution := false,
     commonSettings ++ List(
       libraryDependencies := commonDependencies,
       testOptions         := Seq(
