@@ -3,7 +3,7 @@ package uk.co.odinconsultants
 import io.delta.tables.DeltaTable
 import org.apache.spark.sql.streaming.{OutputMode, StreamingQuery, Trigger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.scalatest.{DoNotDiscover, GivenWhenThen}
+import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
 import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-@DoNotDiscover
 class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   info(
