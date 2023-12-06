@@ -1,12 +1,11 @@
 package uk.co.odinconsultants
 
 import io.delta.tables.DeltaTable
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.{OutputMode, StreamingQuery, Trigger}
-import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
-import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
-import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
+import uk.co.odinconsultants.documentation_utils.{SpecPretifier, TableNameFixture}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -20,7 +19,7 @@ class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with 
 
   "A dataset that is updated" should {
     "write its deltas to another table as a stream" in new SimpleSparkFixture {
-      givenCDFTable(tableName, spark)
+      Given(aCDFTable(tableName, spark))
       override def num_rows: Int         = 100
       val streamSinkTable                = "streamsink"
       val sinkSQL                        = createTableSQLUsingDelta(streamSinkTable)
@@ -77,15 +76,5 @@ class ChangeDataFlowStreamingSpec extends SpecPretifier with GivenWhenThen with 
     }
   }
 
-  def givenCDFTable(tableName: String, spark: SparkSession): DataFrame = {
-    val createCDF: String =
-      s"${createTableSQLUsingDelta(tableName)} TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-    Given(s"a table created with the SQL: ${formatSQL(createCDF)}")
-    spark.sqlContext.sql(createCDF)
-  }
-
-  def createTableSQLUsingDelta(tableName: String): String =
-    s"""${createTableSQL(tableName, classOf[Datum])}
-                                                     |USING DELTA""".stripMargin
 }
 

@@ -1,10 +1,9 @@
 package uk.co.odinconsultants
 import io.delta.tables.DeltaTable
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.DataFrame
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
-import uk.co.odinconsultants.documentation_utils.SQLUtils.createTableSQL
-import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
+import uk.co.odinconsultants.documentation_utils.{SpecPretifier, TableNameFixture}
 
 import java.io.ByteArrayOutputStream
 
@@ -19,7 +18,7 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
     val pkCol: String     = "id"
     val condition: String = s"$tableName.$pkCol = $sinkTable.$pkCol"
     "be created and populated" in new SimpleSparkFixture {
-      givenCDFTable(tableName, spark)
+      Given(aCDFTable(tableName, spark))
 
       When(s"we write ${data.length} rows to $tableName")
       appendData(tableName)
@@ -72,23 +71,6 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
     }
     new String(out.toByteArray)
   }
-
-  def givenCDFTable(tableName: String, spark: SparkSession): DataFrame = {
-    val createCDF: String =
-      s"${createTableSQLUsingDelta(tableName)} TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-    Given(s"a table created with the SQL: ${formatSQL(createCDF)}")
-    spark.sqlContext.sql(createCDF)
-  }
-
-  def describeHistory(
-      tableName: String,
-      spark:     SparkSession,
-  ): DataFrame =
-    spark.sqlContext.sql(s"DESCRIBE HISTORY $tableName")
-
-  def createTableSQLUsingDelta(tableName: String): String =
-    s"""${createTableSQL(tableName, classOf[Datum])}
-                                                     |USING DELTA""".stripMargin
 }
 
 object ChangeDataFlowSpec {
