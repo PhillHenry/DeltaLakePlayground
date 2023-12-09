@@ -46,32 +46,12 @@ b.BWHI {background-color: #aaaaaa}
 </style>
 </head>
 <body>
-<pre>Run starting. Expected test count is: 0
-ChangeDataFlowStreamingSpec:
-+ https://docs.databricks.com/en/structured-streaming/delta-lake.html 
-A dataset that is updated
-- should write its deltas to another table as a stream
-  + Given a table created with the SQL: 
-<b class=YEL>CREATE TABLE ChangeDataFlowStreamingSpec (
-  id int,
-  label String,
-  partitionKey long,
-  date Date,
-  timestamp Timestamp
-) USING DELTA TBLPROPERTIES (delta.enableChangeDataFeed = true)</b> 
-  + And a sink table created with SQL: 
-<b class=YEL>CREATE TABLE streamsink (
-  id int,
-  label String,
-  partitionKey long,
-  date Date,
-  timestamp Timestamp
-) USING DELTA</b> 
-  + When we start streaming from ChangeDataFlowStreamingSpec to streamsink with a watermark of 4 seconds and a trigger processing time of 4000 ms 
-  + And the initial count in streamsink is 0 
-  + And we append 100 rows with a timestamp ranging from 2023-12-09 10:26:36.489 to 2023-12-09 10:28:15.489 
-  + And we wait 4000 ms 
-  + Then the final row count at Sat Dec 09 10:26:47 UTC 2023 in streamsink is 100 rows 
+<pre>MergingDataSpec:
+Data
+- should be merged
+  + Given a table with 20 rows 
+  + When we use 'replaceWhere' to write those partitions where partitionKey = 0 
+  + Then the partition IDs that are not 0 will not change but partition 0 will have the new rows 
 + <b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b> 
 + <b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b><b class=WHI>+ </b><b class=CYN>+ </b><b class=BLU>+ </b><b class=RED>+ </b><b class=GRN>+ </b><b class=MAG>+ </b><b class=YEL>+ </b> </pre>
 </body>
