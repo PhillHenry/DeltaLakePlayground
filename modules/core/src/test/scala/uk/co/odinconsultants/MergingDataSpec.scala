@@ -11,6 +11,7 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
 
   "Data" should {
     "be merged" in new SimpleSparkFixture {
+      val histoColumns                = Seq("Partition Key", "Count")
       val sinkSQL                     = createTableSQLUsingDelta(tableName)
       spark.sqlContext.sql(sinkSQL)
       Given(s"a table with ${data.length} rows")
@@ -20,16 +21,22 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       val partitionId                 = 0
       assert(newData.map(_.partitionKey).toSet.headOption == Some(partitionId))
       private val mergeCondition      = s"partitionKey = $partitionId"
-      When(s"we use '$mergeOp' to write those partitions where $mergeCondition")
-      val newDF                       = spark.createDataFrame(newData)
+      val partitionToCountOriginal    = partitionKeyToCount(data)
+      And(s"the distribution of partition keys to row counts looks like:\n${histogram(partitionToCountOriginal, histoColumns)}")
+
+      When(s"we use '$mergeOp' to write ${newData.length} new rows where $mergeCondition")
+      val newDF = spark.createDataFrame(newData)
       newDF.write
         .format("delta")
         .mode(SaveMode.Overwrite)
         .option(mergeOp, mergeCondition)
         .saveAsTable(tableName)
-      Then(s"the partition IDs that are not $partitionId will not change but partition $partitionId will have the new rows")
-      val partitionToCountOriginal    = partitionKeyToCount(data)
-      val partitionToCountAfter       = partitionKeyToCount(spark.read.table(tableName).as[Datum].collect().toSeq)
+
+      Then(
+        s"the partition IDs that are not $partitionId will not change but partition $partitionId will have the new rows"
+      )
+      val partitionToCountAfter =
+        partitionKeyToCount(spark.read.table(tableName).as[Datum].collect().toSeq)
       partitionToCountOriginal.foreach { case (key: Long, count: Int) =>
         if (key != partitionId) {
           count shouldEqual partitionToCountAfter(key)
@@ -37,8 +44,23 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
           count should be < partitionToCountAfter(key)
         }
       }
+      And(s"the distribution of partition keys to row counts looks like:\n${histogram(partitionToCountAfter, histoColumns)}")
     }
   }
+
+  def histogram[K, V](kv: Map[K, V], names: Seq[String]): String = {
+    val width = (kv.keys.map(_.toString.length) ++ names.map(_.length)).max + 2
+    Seq(columnNames(names, width), histogramValues(kv, width)).mkString("\n")
+  }
+
+  def columnNames(names: Seq[String], width: Int = 20): String = {
+    val cols  = names.map(x => s"%-${width}s".format(x)).mkString("")
+    val lines = names.map(x => s"%-${width}s".format("-" * x.length)).mkString("")
+    Seq(cols, lines).mkString("\n")
+  }
+
+  def histogramValues[K, V](kv: Map[K, V], width: Int = 20): String =
+    kv.map { case (k, v) => s"%-${width}s%s".format(k, v) }.mkString("\n")
 
   private def partitionKeyToCount(
       data: Seq[Datum]
