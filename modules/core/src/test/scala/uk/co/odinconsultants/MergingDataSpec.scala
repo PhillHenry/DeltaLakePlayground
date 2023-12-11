@@ -32,8 +32,8 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       Then(
         s"the partition IDs that are not $partitionId will not change but partition $partitionId will have the new rows"
       )
-      val partitionToCountAfter =
-        partitionKeyToCount(spark.read.table(tableName).as[Datum].collect().toSeq)
+      val dataAfter: Seq[Datum] = spark.read.table(tableName).as[Datum].collect().toSeq
+      val partitionToCountAfter = partitionKeyToCount(dataAfter)
       And(
         s"""the distribution of partition keys to row counts looks like:
            |${histogram(partitionToCountAfter, histoColumns)}
@@ -47,6 +47,7 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
           count should be < partitionToCountAfter(key)
         }
       }
+      dataAfter.filter(_.partitionKey == partitionId).map(_.id).toList.sorted shouldEqual data.map(_.id).toList.sorted
     }
     "not be merged if the partition key is not defined" in new SimpleSparkFixture {
       Given(
@@ -74,8 +75,8 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       mergeCondition: String,
   ): Unit = {
     When(s"we use '$mergeOp' to write ${newData.length} new rows that have partition keys {${newData
-        .map(_.partitionKey)
-        .mkString(", ")}} where $mergeCondition")
+        .map(_.partitionKey).toSet.toList.sorted
+        .mkString(", ")}} and where the merge condition is '$mergeCondition'")
     val newDF = spark.createDataFrame(newData)
     newDF.write
       .format("delta")
