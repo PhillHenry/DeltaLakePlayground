@@ -1,27 +1,30 @@
 package uk.co.odinconsultants
+import org.apache.spark.sql.delta.DeltaAnalysisException
+import org.apache.spark.sql.delta.schema.DeltaInvariantViolationException
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.scalatest.GivenWhenThen
+import org.scalatest.matchers.should.Matchers._
 import uk.co.odinconsultants.documentation_utils.SimpleFixture.now
 import uk.co.odinconsultants.documentation_utils.{Datum, SpecPretifier, TableNameFixture}
-import org.scalatest.matchers.should.Matchers._
 
 class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   import SparkUtils.sparkSession.implicits._
 
   "Data" should {
-    val histoColumns                = Seq("Partition Key", "Count")
+    val histoColumns  = Seq("Partition Key", "Count")
+    val partitionId   = 0L
+    val mergeCondtion = s"partitionKey = $partitionId"
     "be merged" in new SimpleSparkFixture {
-      val sinkSQL                     = createTableSQLUsingDelta(tableName)
-      spark.sqlContext.sql(sinkSQL)
+      spark.sqlContext.sql(createTableSQLUsingDelta(tableName))
       Given(s"a table with ${data.length} rows")
       appendData(tableName)
 
-      val partitionId                 = 0L
       private val dataWith1Partition: Seq[Datum] = createData(1, now, dayDelta, tsDelta)
       assert(dataWith1Partition.map(_.partitionKey).toSet.headOption == Some(partitionId))
-      val partitionToCountOriginal    = partitionKeyToCount(data)
-      whenWeMerge(spark, "replaceWhere", dataWith1Partition,s"partitionKey = $partitionId")
+      val partitionToCountOriginal               = partitionKeyToCount(data)
+
+      whenWeMerge(spark, "replaceWhere", dataWith1Partition, mergeCondtion)
       And(
         s"the distribution of partition keys to row counts looks like:\n${histogram(partitionToCountOriginal, histoColumns)}"
       )
@@ -34,7 +37,7 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       And(
         s"""the distribution of partition keys to row counts looks like:
            |${histogram(partitionToCountAfter, histoColumns)}
-           |where teh data with partition key '$partitionId' has been upserted""".stripMargin
+           |where the data with partition key '$partitionId' has been upserted""".stripMargin
       )
       partitionToCountAfter(partitionId) shouldBe dataWith1Partition.length
       partitionToCountOriginal.foreach { case (key: Long, count: Int) =>
@@ -45,6 +48,23 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
         }
       }
     }
+    "not be merged if the partition key is not defined" in new SimpleSparkFixture {
+      Given(
+        s"a table with partition keys ${data.map(_.partitionKey).toSet.toList.sorted.mkString(", ")}"
+      )
+      try {
+        whenWeMerge(spark, "replaceWhere", data, mergeCondtion)
+        fail(s"Was expecting a ${DeltaInvariantViolationException.getClass.getSimpleName}")
+      } catch {
+        case x: DeltaAnalysisException =>
+          x.getCause match {
+            case _: DeltaInvariantViolationException =>
+              Then(s"a ${DeltaInvariantViolationException.getClass.getSimpleName} is thrown")
+            case _                                   =>
+              fail(s"Was expecting a ${DeltaInvariantViolationException.getClass.getSimpleName}")
+          }
+      }
+    }
   }
 
   def whenWeMerge(
@@ -53,7 +73,9 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       newData:        Seq[Datum],
       mergeCondition: String,
   ): Unit = {
-    When(s"we use '$mergeOp' to write ${newData.length} new rows where $mergeCondition")
+    When(s"we use '$mergeOp' to write ${newData.length} new rows that have partition keys {${newData
+        .map(_.partitionKey)
+        .mkString(", ")}} where $mergeCondition")
     val newDF = spark.createDataFrame(newData)
     newDF.write
       .format("delta")
