@@ -48,20 +48,6 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
     }
   }
 
-  def histogram[K, V](kv: Map[K, V], names: Seq[String]): String = {
-    val width = (kv.keys.map(_.toString.length) ++ names.map(_.length)).max + 2
-    Seq(columnNames(names, width), histogramValues(kv, width)).mkString("\n")
-  }
-
-  def columnNames(names: Seq[String], width: Int = 20): String = {
-    val cols  = names.map(x => s"%-${width}s".format(x)).mkString("")
-    val lines = names.map(x => s"%-${width}s".format("-" * x.length)).mkString("")
-    Seq(cols, lines).mkString("\n")
-  }
-
-  def histogramValues[K, V](kv: Map[K, V], width: Int = 20): String =
-    kv.map { case (k, v) => s"%-${width}s%s".format(k, v) }.mkString("\n")
-
   private def partitionKeyToCount(
       data: Seq[Datum]
   ): Map[Long, Int] =

@@ -5,8 +5,6 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers._
 import uk.co.odinconsultants.documentation_utils.{SpecPretifier, TableNameFixture}
 
-import java.io.ByteArrayOutputStream
-
 class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableNameFixture {
 
   info(
@@ -62,14 +60,6 @@ class ChangeDataFlowSpec extends SpecPretifier with GivenWhenThen with TableName
         "See https://stackoverflow.com/questions/69562007/databricks-delta-table-merge-is-inserting-records-despite-keys-are-matching-with"
       )
     }
-  }
-
-  def captureOutputOf[T](thunk: => T): String = {
-    val out = new ByteArrayOutputStream()
-    Console.withOut(out) {
-      thunk
-    }
-    new String(out.toByteArray)
   }
 }
 
