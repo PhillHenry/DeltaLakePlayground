@@ -1,4 +1,4 @@
-baseURL = 'https://deltalake.thebigdata.space/'
+baseURL = '/'
 languageCode = 'en-us'
 title = 'DeltaLake BDDs'
 theme        = "holy"
