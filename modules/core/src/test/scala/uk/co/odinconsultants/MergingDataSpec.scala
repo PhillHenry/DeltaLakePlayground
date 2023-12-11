@@ -37,6 +37,7 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
       )
       val partitionToCountAfter =
         partitionKeyToCount(spark.read.table(tableName).as[Datum].collect().toSeq)
+      And(s"the distribution of partition keys to row counts looks like:\n${histogram(partitionToCountAfter, histoColumns)}")
       partitionToCountOriginal.foreach { case (key: Long, count: Int) =>
         if (key != partitionId) {
           count shouldEqual partitionToCountAfter(key)
@@ -44,7 +45,6 @@ class MergingDataSpec extends SpecPretifier with GivenWhenThen with TableNameFix
           count should be < partitionToCountAfter(key)
         }
       }
-      And(s"the distribution of partition keys to row counts looks like:\n${histogram(partitionToCountAfter, histoColumns)}")
     }
   }
 
