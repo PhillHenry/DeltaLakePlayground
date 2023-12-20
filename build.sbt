@@ -74,6 +74,7 @@ val header = s"""## DeltaLake Playground
                |These are BDD (Behaviour Driven Design) tests that both test
                |the code and generate human readable documentation.
                |The code for these tests can be found in [GitHub](https://github.com/PhillHenry/DeltaLakePlayground)
+               |These were built with Spark v${Dependencies.V.spark}, Delta Lake v${Dependencies.V.deltaLake} and MinIO v${Dependencies.V.minio}.
                |
                |""".stripMargin
 val args   =

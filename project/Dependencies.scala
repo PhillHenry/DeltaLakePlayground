@@ -47,7 +47,7 @@ object Dependencies {
     val documentationUtilsSpark =
       "uk.co.odinconsultants.documentation_utils" % "spark" % V.documentationUtils
     val documentationUtilsCore =
-      "uk.co.odinconsultants.documentation_utils" % "spark" % V.documentationUtils
+      "uk.co.odinconsultants.documentation_utils" % "core" % V.documentationUtils
 
     val scalaTest       = "org.scalatest"       %% "scalatest"                % V.scalaTest
     val flexMark        = "com.vladsch.flexmark" % "flexmark"                 % "0.36.8" % Test
