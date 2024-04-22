@@ -1,6 +1,6 @@
 package uk.co.odinconsultants
-import org.apache.spark.sql.DataFrame
-import uk.co.odinconsultants.SparkUtils.{sparkSession, read, write}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import uk.co.odinconsultants.SparkUtils.{sparkSession, write}
 
 import java.io.File
 
@@ -15,14 +15,18 @@ object CacheMain {
     val dir = createTempDir()
     val n: Long = 5
     write(spark, dir, n)
-    assert(read(spark, dir).count() == n)
+    assert(reaDelta(spark, dir).count() == n)
     write(spark, dir, n)
-    val df: DataFrame = read(spark, dir)
+    val df: DataFrame = reaDelta(spark, dir)
     assert(df.count() == n * 2)
     df.cache()
     write(spark, dir, n)
-    assert(read(spark, dir).count() == n * 3) // this blows up even though we have a new DataFrame
+    assert(reaDelta(spark, dir).count() == n * 3) // this blows up even though we have a new DataFrame
     ()
+  }
+  def reaDelta(spark: SparkSession, dir: String = "/tmp/delta-table"): DataFrame = {
+    val data = spark.read.format("delta").load(dir)
+    data
   }
   private def createTempDir(): String = {
     val dir = File.createTempFile(this.getClass.getSimpleName.replace("$", "_"), "")
